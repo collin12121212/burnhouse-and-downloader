@@ -1,0 +1,457 @@
+=== runner ===
+x86_64
+ProductName:		macOS
+ProductVersion:		15.7.9
+BuildVersion:		24G830
+brew prefix: /usr/local
+
+=== bundle-deps output ===
+Building for macOS 12.0 on x86_64
+Scratch: /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/tmp.xxxsGxg6MZ
+
+
+==> zlib 1.3.1: building (static, macOS 12.0)
+    checksum matches
+    installed into /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/tmp.xxxsGxg6MZ/local
+
+==> ffmpeg 7.1.1: building (static, macOS 12.0)
+    sha256 733984395e0dbbe5c046abda2dc49a5544e7e0e1e2366bba849222ae9e3a03b1
+    ffmpeg: x86_64
+    ffprobe: x86_64
+
+==> libpng 1.6.44: building (static, macOS 12.0)
+configure: WARNING: *** You have not enabled versioned symbols.
+    installed into /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/tmp.xxxsGxg6MZ/local
+
+==> freetype 2.13.3: building (static, macOS 12.0)
+    checksum matches
+    installed into /var/folders/20/jp1_0n3n7kndh6rnbqb5344m0000gn/T/tmp.xxxsGxg6MZ/local, with a freetype-config shim over freetype2.pc
+
+==> dvdauthor 0.7.2: building (macOS 12.0)
+    checksum matches
+    configure chose:
+      checking for LIBPNG... yes
+      checking for MAGICK... no
+      checking for FONTCONFIG... no
+      checking for FRIBIDI... no
+      checking for freetype-config... freetype-config
+      checking ft2build.h usability... yes
+      checking ft2build.h presence... yes
+dvdcompile.c:647:32: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  647 |                         i2 > 0 && i2 < 128 /* jump to non-entry menu */
+      |                         ~~~~~~~^~~~~~~~~~~
+  648 |                     ||
+      |                     ~~
+dvdcompile.c:647:32: note: place parentheses around the '&&' expression to silence this warning
+dvdauthor.c:1222:25: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1220 |                    647 |                         i2 >    ||
+      |                     ~~
+ 1221 |               0 && i2 < 128 /* jump to non-en        try menu */
+      |                                ^
+      |                         (                 )
+dvdcompile.c:649:33: warning: '&&' within '||' [-Wlogical-op-parentheses]      !strncmp(
+  648 |             entry->d_name, "VTS_", 4)
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
+||
+      |                     ~~
+  649 |                         i2 == 0 && i1 == 1 /* jump to VMGM */
+      |                         ~~~~~~~~^~~~~~~~~~
+ dvdcompile.c:649:33: note: place parentheses around the '&&' expression to silence this warning
+  649 | 1222 |                              i2 ==                0 && i1 == 1 /*    &&
+      |                         ^~
+ 1223 |        jump to VMGM */
+      |                                 ^
+      |                         (                 )
+    dvdcompile.c:759:44: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  758 |               ||
+      |               ~~
+  759 |                                  i1 == 1 /*jump to VMGM*/ && i2 >= 128 /*title*/
+      |                   ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~
+ dvdcompile.c:759:44: note: place parentheses around the '&&' expression to silence this warning
+  759 |                   i1 == 1 /*jump to VMGM*/ && i2 >= 128 /*title*/
+      |                                            ^
+      |                   (                                    )
+ dvdcompile.c:761:63: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  760 |               ||
+      |               ~~
+  761 |                   ismenu == VTYPE_VMGM && i2  >= 128 /*title*/ && (cs->i3 entry->d_name[& 65535) != 0 /*chapter/program/cell*/
+      |                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~
+6dvdcompile.c:761:63: note: place parentheses around the '&&' expression to silence this warning
+  761 |   ] == '_'
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~
+                ismenu == VTYPE_VMGM && i2 >= 128 /*title*/ && (cs->i3 & 65535) != 0 /*chapter/program/cell*/
+      |                                                               ^
+      |                   (                                                                   )
+dvdauthor.c:1222:25: note: place parentheses around the '&&' expression to silence this warning
+dvdcompile.c:1062:58: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1061 |                     ||
+      |                     ~~
+ 1062 |                         cs->i1 == 0 /*no VMGM/titleset*/ && ismenu != VTYPE_VMGM 
+      |                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~1221 |       
+ dvdcompile.c:1062:58: note: place parentheses around the '&&' expression to silence this warning
+  1062 |                          cs-> i1 == 0 /*no VMGM/titleset*/ && ismenu != VTYPE_VMGM
+      |                                                          ^                      
+      |                         (                                                       )
+                  !strncmp(edvdcompile.c:1183:17: warning: '&' within '|' [-Wbitwise-op-parentheses]
+n 1183 |             ifs & 0x8ffffff /* remove compartison op, leary->d_name, "VTS_", 4)
+      |                             (
+ 1222 |                    ve direct flag and operands */
+      |      &&
+      |                         ^
+ 1223 |                               ~~~~^~~~~~~~~~~
+ 1184 |         |
+      |         ~
+ dvdcompile.c:1183:17: note: place parentheses around the '&' expression to silence this warning
+ 1183 |             ifs & 0x8ffffff /* remove compar ison op, leave  direct fl       entrya-g and operands */
+      >|                 ^
+      d|             (              )
+_name[6] == '_'
+      |                                                    
+      |                                                    )
+dvdcompile.c:1490:21: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1488 |                 ||
+      |                 ~~
+ 1489 |                         (b[8 + 1] & 0xf) == 1
+      |                         ~~~~~~~~~~~~~~~~~~~~~
+ 1490 |                     &&
+      |                     ^~
+ 1491 |                         (b[8 + 7] & 0x1f) != 0
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+dvdcompile.c:1490:21: note: place parentheses around the '&&' expression to silence this warning
+ 1489 |                         (b[8 + 1] & 0xf) == 1
+      |                         (
+ 1490 |                     &&
+      |                     ^
+ 1491 |                         (b[8 + 7] & 0x1f) != 0
+      |                                               
+      |                                               )
+dvdcompile.c:1529:21: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1527 |                 ||
+      |                 ~~
+ 1528 |                         (b[8 + 1] & 0x7f) == 1
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+ 1529 |                     &&
+      |                     ^~
+ 1530 |                         (b[8 + 7] & 0x1f) != 0
+      |                         ~~~~~~~~~~~~~~~~~~~~~~
+dvdcompile.c:1529:21: note: place parentheses around the '&&' expression to silence this warning
+ 1528 |                         (b[8 + 1] & 0x7f) == 1
+      |                         (
+ 1529 |                     &&
+      |                     ^
+ 1530 |                         (b[8 + 7] & 0x1f) != 0
+      |                                               
+      |                                               )
+8 warnings generated.
+dvdifo.c:593:12: warning: variable 'ifo_pad' set but not used [-Wunused-but-set-variable]
+  593 |     size_t ifo_pad = 0;
+      |            ^
+dvdifo.c:735:12: warning: variable 'ifo_pad' set but not used [-Wunused-but-set-variable]
+  735 |     size_t ifo_pad = 0;
+      |            ^
+dvdvob.c:366:59: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  365 |                 ||
+      |                 ~~
+  366 |                     buf[17 + sysoffs] >= MPID_AUDIO_FIRST && buf[17 + sysoffs] <= MPID_VIDEO_LAST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+dvdvob.c:366:59: note: place parentheses around the '&&' expression to silence this warning
+  366 |                     buf[17 + sysoffs] >= MPID_AUDIO_FIRST && buf[17 + sysoffs] <= MPID_VIDEdvdifo.c:90:13: warning: unused function 'buf_write8b' [-Wunused-function]
+   90 | static vO_LAST
+      |                                                           ^                                      
+      |                     (                                                                            )
+oid buf_write8b
+      |             ^~~~~~~~~~~
+3 warnings generated.
+1 warning generated.
+dvdcli.c:1240:10: warning: passing 'const char *' to parameter of type 'void *' discards qualifiers [-Wincompatible-pointer-types-discards-qualifiers]
+ 1240 |     free(f);
+      |          ^
+/Applications/Xcode_16.4.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/malloc/_malloc.h:56:37: note: passing argument to parameter here
+   56 | void  free(void * __unsafe_indexable);
+      |                                     ^
+compat.c:1196:31: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                      ~~~~~~~~~^~~~~~~~~~~ ~~
+compat.c:1196:31: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                               ^
+      |                      (                   )
+compat.c:1196:55: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                           ~~ ~~~~~~~~~^~~~~~~~~~~
+compat.c:1196:55: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                       ^
+      |                                              (                   )
+compat.c:1196:79: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                                   ~~ ~~~~~~~~~^~~~~~~~~~~
+compat.c:1196:79: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                                               ^          
+      |                                                                      (                   )
+compat.c:1198:29: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                     ~~~~~~~~^~~~~~~~~~~ ~~
+compat.c:1198:29: note: place parentheses around the '&&' expression to silence this warning
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                             ^
+      |                     (                  )
+compat.c:1198:52: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                                         ~~ ~~~~~~~~^~~~~~~~~~~
+compat.c:1198:52: note: place parentheses around the '&&' expression to silence this warning
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                                                    ^          
+      |                                            (                  )
+1 warning generated.
+subgen.c:613:29: warning: implicit conversion from 'int' to 'char' changes value from 190 to -66 [-Wconstant-conversion]
+  613 |                 header[3] = MPID_PAD; /* for my private button/palette data */
+      |                           ~ ^~~~~~~~
+5 warnings generated.
+1 warning generated.
+1 warning generated.
+subgen-image.c:281:70: warning: format specifies type 'unsigned long' but the argument has type 'png_uint_32' (aka 'unsigned int') [-Wformat]
+  281 |         fprintf(stderr,"ERR:  PNG %s is too big: %lux%lu\n",s->fname,width,height);
+      |                                                  ~~~                 ^~~~~
+      |                                                  %u
+subgen-image.c:281:76: warning: format specifies type 'unsigned long' but the argument has type 'png_uint_32' (aka 'unsigned int') [-Wformat]
+  281 |         fprintf(stderr,"ERR:  PNG %s is too big: %lux%lu\n",s->fname,width,height);
+      |                                                      ~~~                   ^~~~~~
+      |                                                      %u
+subgen-image.c:550:25: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  546 |                     ||
+      |                     ~~
+  547 |                             s->img.pal[(tri >> 16) & 0xFF].a == 0
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  548 |                         &&
+      |                         ~~
+  549 |                             s->hlt.pal[(tri >> 8) & 0xFF].a == 0
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  550 |                         &&
+      |                         ^~
+  551 |                             s->sel.pal[tri & 0xFF].a == 0
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+subgen-image.c:550:25: note: place parentheses around the '&&' expression to silence this warning
+  547 |                             s->img.pal[(tri >> 16) & 0xFF].a == 0
+      |                             (
+  548 |                         &&
+  549 |                             s->hlt.pal[(tri >> 8) & 0xFF].a == 0
+  550 |                         &&
+      |                         ^
+  551 |                             s->sel.pal[tri & 0xFF].a == 0
+      |                                                          
+      |                                                          )
+subreader.c:2139:13: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 2137 |         ||
+      |         ~~
+ 2138 |                 suboverlap_enabled
+      |                 ~~~~~~~~~~~~~~~~~~
+ 2139 |             &&
+      |             ^~
+ 2140 |                 (sub_format == SUB_JACOSUB || sub_format == SUB_SSA)
+      |                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+subreader.c:2139:13: note: place parentheses around the '&&' expression to silence this warning
+ 2138 |                 suboverlap_enabled
+      |                 (
+ 2139 |             &&
+      |             ^
+ 2140 |                 (sub_format == SUB_JACOSUB || sub_format == SUB_SSA)
+      |                                                                     
+      |                                                                     )
+subfont.c:939:9: warning: unused variable 'err' [-Wunused-variable]
+  939 |     int err;
+      |         ^~~
+subfont.c:67:27: warning: unused variable 'nr_colors' [-Wunused-const-variable]
+   67 | static unsigned int const nr_colors = 256;
+      |                           ^~~~~~~~~
+subfont.c:68:27: warning: unused variable 'maxcolor' [-Wunused-const-variable]
+   68 | static unsigned int const maxcolor = 255;
+      |                           ^~~~~~~~
+subfont.c:69:23: warning: unused variable 'first_char' [-Wunused-const-variable]
+   69 | static unsigned const first_char = 33; /* first non-printable, non-whitespace character */
+      |                       ^~~~~~~~~~
+3 warnings generated.
+1 warning generated.
+4 warnings generated.
+spuunmux.c:555:44: warning: '&' within '|' [-Wbitwise-op-parentheses]
+  554 |                 |
+      |                 ~
+  555 |                     map[i].color >> ci * 4 & 15;
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~^~~~
+spuunmux.c:555:44: note: place parentheses around the '&' expression to silence this warning
+  555 |                     map[i].color >> ci * 4 & 15;
+      |                                            ^   
+      |                     (                          )
+spuunmux.c:1347:57: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1346 |                             ||
+      |                             ~~
+ 1347 |                                 cbuf[next_word] == 0x70 && cbuf[next_word + 1] == stream_number
+      |                                 ~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+spuunmux.c:1347:57: note: place parentheses around the '&&' expression to silence this warning
+ 1347 |                                 cbuf[next_word] == 0x70 && cbuf[next_word + 1] == stream_number
+      |                                                         ^                                      
+      |                                 (                                                              )
+compat.c:1196:31: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                      ~~~~~~~~~^~~~~~~~~~~ ~~
+compat.c:1196:31: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                               ^
+      |                      (                   )
+compat.c:1196:55: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                           ~~ ~~~~~~~~~^~~~~~~~~~~
+compat.c:1196:55: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                       ^
+      |                                              (                   )
+compat.c:1196:79: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                                   ~~ ~~~~~~~~~^~~~~~~~~~~
+compat.c:1196:79: note: place parentheses around the '&&' expression to silence this warning
+ 1196 |             else if (c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c >= 'A' && c <= 'Z')
+      |                                                                               ^          
+      |                                                                      (                   )
+compat.c:1198:29: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                     ~~~~~~~~^~~~~~~~~~~ ~~
+compat.c:1198:29: note: place parentheses around the '&&' expression to silence this warning
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                             ^
+      |                     (                  )
+compat.c:1198:52: warning: '&&' within '||' [-Wlogical-op-parentheses]
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                                         ~~ ~~~~~~~~^~~~~~~~~~~
+compat.c:1198:52: note: place parentheses around the '&&' expression to silence this warning
+ 1198 |                 if (c > 'f' && c <= 'z' || c > 'F' && c <= 'Z')
+      |                                                    ^          
+      |                                            (                  )
+mpeg2desc.c:147:17: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  144 |                     stream >= MPID_AUDIO_FIRST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  145 |                 &&
+      |                 ~~
+  146 |                     stream <= MPID_AUDIO_LAST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~
+  147 |                 &&
+      |                 ^~
+  148 |                     (realquad & 0xFFE00000) == 0xFFE00000
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  149 |             ||
+      |             ~~
+mpeg2desc.c:147:17: note: place parentheses around the '&&' expression to silence this warning
+  144 |                     stream >= MPID_AUDIO_FIRST
+      |                     (
+  145 |                 &&
+  146 |                     stream <= MPID_AUDIO_LAST
+  147 |                 &&
+      |                 ^
+  148 |                     (realquad & 0xFFE00000) == 0xFFE00000
+      |                                                          
+      |                                                          )
+mpeg2desc.c:153:17: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  149 |             ||
+      |             ~~
+  150 |                     stream >= MPID_VIDEO_FIRST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~
+  151 |                 &&
+      |                 ~~
+  152 |                     stream <= MPID_VIDEO_LAST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~
+  153 |                 &&
+      |                 ^~
+  154 |                     realquad == 0x100 + MPID_SEQUENCE
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mpeg2desc.c:153:17: note: place parentheses around the '&&' expression to silence this warning
+  150 |                     stream >= MPID_VIDEO_FIRST
+      |                     (
+  151 |                 &&
+  152 |                     stream <= MPID_VIDEO_LAST
+  153 |                 &&
+      |                 ^
+  154 |                     realquad == 0x100 + MPID_SEQUENCE
+      |                                                      
+      |                                                      )
+mpeg2desc.c:401:33: warning: '&' within '|' [-Wbitwise-op-parentheses]
+  401 |                     buf[1] << 8 & 0xf00 | buf[2],
+      |                     ~~~~~~~~~~~~^~~~~~~ ~
+mpeg2desc.c:401:33: note: place parentheses around the '&' expression to silence this warning
+  401 |                     buf[1] << 8 & 0xf00 | buf[2],
+      |                                 ^
+      |                     (                  )
+mpeg2desc.c:559:55: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  558 |                 ||
+      |                 ~~
+  559 |                     hdrid >= 0x100 + MPID_AUDIO_FIRST && hdrid <= 0x100 + MPID_AUDIO_LAST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mpeg2desc.c:559:55: note: place parentheses around the '&&' expression to silence this warning
+  559 |                     hdrid >= 0x100 + MPID_AUDIO_FIRST && hdrid <= 0x100 + MPID_AUDIO_LAST
+      |                                                       ^                                  
+      |                     (                                                                    )
+mpeg2desc.c:561:55: warning: '&&' within '||' [-Wlogical-op-parentheses]
+  560 |                 ||
+      |                 ~~
+  561 |                     hdrid >= 0x100 + MPID_VIDEO_FIRST && hdrid <= 0x100 + MPID_VIDEO_LAST
+      |                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mpeg2desc.c:561:55: note: place parentheses around the '&&' expression to silence this warning
+  561 |                     hdrid >= 0x100 + MPID_VIDEO_FIRST && hdrid <= 0x100 + MPID_VIDEO_LAST
+      |                                                       ^                                  
+      |                     (                                                                    )
+5 warnings generated.
+5 warnings generated.
+2 warnings generated.
+
+==============================================================
+Built into /Users/runner/work/burnhouse-and-downloader/burnhouse-and-downloader/dvdburner/vendor/bin
+  ffmpeg: x86_64  minimum macOS 12.0
+  ffprobe: x86_64  minimum macOS 12.0
+  dvdauthor: x86_64  minimum macOS 12.0
+  spumux: x86_64  minimum macOS 12.0
+
+Checking nothing points at a build-machine path...
+All four tools are self-contained.
+
+=== the bundled tools as built ===
+--- ffmpeg
+architectures: x86_64
+minimum macOS: 12.0
+linked against:
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)
+	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 3502.1.255)
+	/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo (compatibility version 1.2.0, current version 1.5.0)
+	/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia (compatibility version 1.0.0, current version 3225.7.1)
+--- ffprobe
+architectures: x86_64
+minimum macOS: 12.0
+linked against:
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)
+	/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 3502.1.255)
+	/System/Library/Frameworks/CoreVideo.framework/Versions/A/CoreVideo (compatibility version 1.2.0, current version 1.5.0)
+	/System/Library/Frameworks/CoreMedia.framework/Versions/A/CoreMedia (compatibility version 1.0.0, current version 3225.7.1)
+--- dvdauthor
+architectures: x86_64
+minimum macOS: 12.0
+linked against:
+	/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)
+	/usr/lib/libxml2.2.dylib (compatibility version 10.0.0, current version 10.9.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)
+	/usr/lib/libicucore.A.dylib (compatibility version 1.0.0, current version 76.1.0)
+--- spumux
+architectures: x86_64
+minimum macOS: 12.0
+linked against:
+	/usr/lib/libxml2.2.dylib (compatibility version 10.0.0, current version 10.9.0)
+	/usr/lib/libicucore.A.dylib (compatibility version 1.0.0, current version 76.1.0)
+	/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)
+	/usr/lib/libbz2.1.0.dylib (compatibility version 1.0.0, current version 1.0.8)
+	/usr/lib/libiconv.2.dylib (compatibility version 7.0.0, current version 7.0.0)
+
+=== the same for what Homebrew installed ===
+
+=== what was produced ===
+vendor/bin/ffmpeg
+vendor/bin/ffprobe
+vendor/bin/spumux
+vendor/bin/dvdauthor
+(no dist)
