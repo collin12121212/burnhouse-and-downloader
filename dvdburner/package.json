@@ -1,0 +1,102 @@
+{
+  "name": "burnhouse",
+  "productName": "Burnhouse",
+  "version": "1.0.20",
+  "description": "Make a DVD that plays. Drop in videos, design a menu, burn a disc.",
+  "author": "Burnhouse",
+  "license": "MIT",
+  "private": true,
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "app": "powershell -NoProfile -ExecutionPolicy Bypass -File ./build-and-start.ps1",
+    "test": "node test/speed.js && node test/disc.js && node test/run.js && node test/server.js",
+    "test:core": "node test/run.js",
+    "test:disc": "node test/disc.js",
+    "test:speed": "node test/speed.js",
+    "test:server": "node test/server.js",
+    "test:menu": "electron test/menu.js",
+    "test:reuse": "electron test/reuse.js",
+    "test:smoke": "electron test/smoke.js",
+    "test:interact": "electron test/interact.js",
+    "test:firstrun": "electron test/firstrun.js",
+    "verify": "node test/verify.js",
+    "serve": "node src/server/serve.js",
+    "vendor:fetch": "node scripts/fetch-vendor.js",
+    "dist:mac": "electron-builder --mac --x64",
+    "dist:dir": "electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^31.7.7",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.burnhouse.app",
+    "productName": "Burnhouse",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.video",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "extendInfo": {
+        "LSMinimumSystemVersion": "10.15",
+        "NSHighResolutionCapable": true
+      }
+    },
+    "dmg": {
+      "title": "Burnhouse ${version}",
+      "backgroundColor": "#1b1a18",
+      "window": {
+        "width": 560,
+        "height": 380
+      },
+      "contents": [
+        {
+          "x": 150,
+          "y": 190,
+          "type": "file"
+        },
+        {
+          "x": 410,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

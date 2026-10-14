@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!--
+  A strict content policy. The interface loads nothing from the network: no
+  fonts, no analytics, no remote images. Everything it needs is in this folder
+  or comes through the bridge.
+-->
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; media-src 'self' file: blob:; font-src 'self'; connect-src 'none'; form-action 'none';">
+<title>Burnhouse</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- Title bar. On macOS the traffic lights live in the left padding, so this
+       strip is also the window drag handle. -->
+  <header class="titlebar">
+    <div class="brand">
+      <button class="btn btn-quiet btn-small" type="button" id="btnProjectsHome" title="Return to Projects screen" style="margin-right: 6px;" hidden>&larr; Projects</button>
+      <span class="brand-name">Burnhouse</span>
+      <span class="brand-tag" id="brandTag">Make a DVD that plays</span>
+    </div>
+
+    <div class="titlebar-spacer"></div>
+
+    <nav class="steps" id="steps" aria-label="Steps">
+      <button class="step" type="button" data-step="slides" aria-current="true">
+        <span class="step-num">1</span><span>Slides</span>
+      </button>
+      <button class="step" type="button" data-step="testing">
+        <span class="step-num">2</span><span>Testing</span>
+      </button>
+      <button class="step" type="button" data-step="finish">
+        <span class="step-num">3</span><span>Finish</span>
+      </button>
+    </nav>
+
+    <div class="btn-row" style="margin-left: 12px;">
+      <button class="btn btn-quiet btn-small" type="button" id="btnSaveProject"
+              title="Save project (Cmd/Ctrl+S)" hidden>Save</button>
+      <button class="btn btn-quiet btn-small" type="button" id="btnShare"
+              title="Share files with another computer on your network">Share</button>
+      <button class="btn btn-quiet btn-small" type="button" id="btnSetup"
+              title="Check the tools and choose folders">Setup</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- The working area for the current step. -->
+    <section class="stage" id="stage" aria-live="polite"></section>
+
+    <!-- The context rail: capacity, format, and the running summary. -->
+    <aside class="rail" id="rail"></aside>
+  </div>
+
+  <!-- Job progress, shown only while something is running. -->
+  <div class="jobbar" id="jobbar" hidden>
+    <div class="jobbar-main">
+      <span class="job-label" id="jobLabel">Working&hellip;</span>
+      <div class="progress"><div class="progress-fill" id="jobProgress"></div></div>
+      <span class="job-percent" id="jobPercent"></span>
+      <button class="btn btn-small btn-quiet" type="button" id="btnLogToggle">Details</button>
+      <button class="btn btn-small btn-danger" type="button" id="btnCancel">Stop</button>
+    </div>
+    <div class="log" id="log" hidden></div>
+  </div>
+</div>
+
+<!-- Setup / diagnostics dialog -->
+<div class="overlay" id="setupOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+    <div class="dialog-head">
+      <h2 id="setupTitle">Setup</h2>
+      <button class="icon-btn" type="button" data-close-overlay aria-label="Close">&#10005;</button>
+    </div>
+    <div class="dialog-body" id="setupBody"></div>
+    <div class="dialog-foot">
+      <button class="btn" type="button" id="btnRecheck">Check Again</button>
+      <button class="btn btn-primary" type="button" data-close-overlay>Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share dialog -->
+<div class="overlay" id="shareOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <div class="dialog-head">
+      <h2 id="shareTitle">Share With Another Computer</h2>
+      <button class="icon-btn" type="button" data-close-overlay aria-label="Close">&#10005;</button>
+    </div>
+    <div class="dialog-body" id="shareBody"></div>
+    <div class="dialog-foot">
+      <button class="btn" type="button" data-close-overlay>Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Help dialog -->
+<div class="overlay" id="helpOverlay" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="dialog-head">
+      <h2 id="helpTitle">How to Use Burnhouse</h2>
+      <button class="icon-btn" type="button" data-close-overlay aria-label="Close">&#10005;</button>
+    </div>
+    <div class="dialog-body" id="helpBody"></div>
+    <div class="dialog-foot">
+      <button class="btn btn-primary" type="button" data-close-overlay>Got It</button>
+    </div>
+  </div>
+</div>
+
+<!-- The shared slide drawing code, loaded before the interface so the preview,
+     the filmstrip thumbnails and the disc all render a slide identically. The
+     safe-area rule rides with it: the raster, the margin, and where an element
+     may be dragged to are the same numbers the authoring side uses. -->
+<script src="../core/safe_area.js"></script>
+<script src="../core/slide_draw.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

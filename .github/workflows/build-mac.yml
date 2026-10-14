@@ -1,0 +1,420 @@
+name: Build Burnhouse for macOS
+
+# Produces the .dmg. Everything the app needs — ffmpeg, dvdauthor and their
+# libraries — is fetched and made relocatable here, so the Mac it is installed on
+# needs nothing installed beforehand.
+#
+# THE RUNNER MUST BE INTEL. The Mac this is for is a 2017 MacBook Air, which is
+# x86_64. On an Apple Silicon runner Homebrew installs arm64 tools, and an arm64
+# binary cannot run on an Intel Mac at all: the app would install, launch, and
+# then fail the moment a video was added. Hence `macos-15-intel`, which is what
+# replaced the retired `macos-13`.
+#
+# The build is x86_64 only. That is not a limitation — an Intel build runs
+# natively on her Mac and under Rosetta on any Apple Silicon Mac, so one build
+# covers both, and it is the only option that also gets working tools.
+#
+# This workflow is also the only place the disc-authoring pipeline is tested
+# against a real dvdauthor on macOS, so the test step gates the build: if
+# authoring breaks, no artifact is produced.
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (emergency only)'
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    working-directory: dvdburner
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: Test the pipeline
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install the tools
+        run: |
+          # No `brew update`. The runner images ship with a current Homebrew, and
+          # updating it costs minutes of nothing on every build.
+          brew install ffmpeg dvdauthor
+          echo "--- versions ---"
+          ffmpeg -version | head -1
+          dvdauthor --version 2>&1 | head -1
+          which dvdauthor spumux ffmpeg ffprobe
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Core pipeline tests
+        run: npm run test:core
+
+      - name: Disc image tests
+        # Mounts a disc image Burnhouse wrote itself with macOS's own UDF
+        # driver. Nothing else checks the image on a Mac before it is burned.
+        run: npm run test:disc
+
+      - name: Reuse and speed tests
+        # The caching that keeps a rebuild from re-encoding an unchanged disc is
+        # the part most likely to fail quietly: get it wrong and the disc is
+        # wrong, not slow. It also runs the real pipeline twice against real
+        # ffmpeg and dvdauthor, which nothing else here does.
+        run: |
+          npm run test:speed
+          npm run test:reuse
+
+      - name: Sharing server tests
+        run: npm run test:server
+
+      - name: Menu rendering tests
+        run: npx electron test/menu.js
+
+      - name: Upload menu samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: menu-samples
+          path: dvdburner/test/menu-samples/
+          if-no-files-found: ignore
+
+  build:
+    name: Build the app
+    needs: test
+    if: ${{ github.event_name != 'pull_request' || needs.test.result == 'success' }}
+    runs-on: macos-15-intel
+    outputs:
+      version: ${{ steps.package.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build the tools for macOS 12
+        run: |
+          set -euo pipefail
+          chmod +x scripts/build-deps-macos.sh
+          # No Homebrew: on this runner every bottle needs macOS 14, and the Mac
+          # this app is for cannot run anything newer than 12.7.6.
+          ./scripts/build-deps-macos.sh vendor/bin 2>&1 | tee /tmp/bundle.log
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Verify the bundled tools run with nothing else on the machine
+        run: |
+          set -euo pipefail
+          # Moving them somewhere else and emptying the environment proves they
+          # are self-contained: a tool still reaching for a build-machine library
+          # dies here with a dyld error rather than on somebody's laptop.
+          mkdir -p /tmp/relocated
+          cp -R vendor/bin /tmp/relocated/bin
+          cd /tmp
+          for tool in ffmpeg ffprobe; do
+            env -i PATH=/usr/bin:/bin "/tmp/relocated/bin/${tool}" -version | head -1
+          done
+          # dvdauthor prints its version and exits non-zero, which is its choice.
+          env -i PATH=/usr/bin:/bin /tmp/relocated/bin/dvdauthor --version 2>&1 | head -1 || true
+          env -i PATH=/usr/bin:/bin /tmp/relocated/bin/spumux 2>&1 | head -1 || true
+          echo "All four ran from a directory with nothing but the system on PATH."
+
+      - name: Confirm the bundled tools are Intel and will run on macOS 12
+        run: |
+          set -euo pipefail
+          # Two ways this build can produce a .dmg that installs and then cannot
+          # make a disc, and neither is visible from the app launching:
+          #
+          #   1. the tools are the wrong architecture, so they will not execute;
+          #   2. the tools need a newer macOS than the Mac they are for.
+          #
+          # Both are checked here rather than discovered on somebody's laptop.
+          echo "--- architectures ---"
+          for tool in ffmpeg ffprobe dvdauthor spumux; do
+            ARCHS="$(lipo -archs "vendor/bin/${tool}")"
+            echo "${tool}: ${ARCHS}"
+            case "${ARCHS}" in
+              *x86_64*) ;;
+              *) echo "ERROR: ${tool} is ${ARCHS}, not x86_64. On an Apple Silicon" >&2
+                 echo "       runner Homebrew installs arm64 tools, which cannot" >&2
+                 echo "       run on an Intel Mac. Check the runner label." >&2
+                 exit 1 ;;
+            esac
+          done
+
+          echo "--- minimum macOS each tool needs ---"
+          FAILED=0
+          UNKNOWN=0
+          for tool in ffmpeg ffprobe dvdauthor spumux; do
+            # Two load commands carry this, and which one is used depends on the
+            # toolchain that built the binary:
+            #   LC_BUILD_VERSION       prints "minos 12.0"
+            #   LC_VERSION_MIN_MACOSX  prints "version 10.13"
+            # Looking only for "minos" silently skipped every older binary and
+            # reported the check as satisfied, which is the worst way to fail.
+            MINOS="$(otool -l "vendor/bin/${tool}" 2>/dev/null \
+                     | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' \
+                     | grep -E '^ *(minos|version) ' \
+                     | head -1 | awk '{print $2}')"
+            echo "${tool}: minimum macOS ${MINOS:-could not be read}"
+            if [ -z "${MINOS}" ]; then
+              UNKNOWN=1
+              continue
+            fi
+            # Anything above 12 cannot run on macOS 12.7.6.
+            MAJOR="${MINOS%%.*}"
+            if [ "${MAJOR}" -gt 12 ]; then
+              echo "ERROR: ${tool} needs macOS ${MINOS}, but the target Mac runs 12.7.6." >&2
+              FAILED=1
+            fi
+          done
+          if [ "${FAILED}" -ne 0 ]; then
+            echo "" >&2
+            echo "The Homebrew bottles are too new for this Mac. Replace them with" >&2
+            echo "builds that target macOS 12 — a static ffmpeg for x86_64, and" >&2
+            echo "dvdauthor compiled with -mmacosx-version-min=12.0." >&2
+            exit 1
+          fi
+          if [ "${UNKNOWN}" -ne 0 ]; then
+            echo "::warning::The minimum macOS of at least one tool could not be read, so its compatibility with macOS 12.7.6 is unverified."
+          fi
+
+      - name: Confirm the bundled tools are present before packaging
+        run: |
+          set -euo pipefail
+          # Packaging an app with no tools inside it would produce a .dmg that
+          # installs cleanly and then cannot burn anything. Fail here instead.
+          for tool in ffmpeg ffprobe dvdauthor spumux; do
+            if [ ! -x "vendor/bin/${tool}" ]; then
+              echo "ERROR: vendor/bin/${tool} is missing; the app would ship without it." >&2
+              exit 1
+            fi
+            # And each one has to be on its own: there is no lib directory to
+            # carry, because every tool is built to run against macOS alone.
+            if otool -L "vendor/bin/${tool}" | tail -n +2 \
+                 | grep -qvE '^\s*(/usr/lib/|/System/Library/)'; then
+              echo "ERROR: vendor/bin/${tool} depends on something that is not part of macOS:" >&2
+              otool -L "vendor/bin/${tool}" | tail -n +2 \
+                | grep -vE '^\s*(/usr/lib/|/System/Library/)' >&2
+              exit 1
+            fi
+          done
+          echo "All four tools are present and depend only on macOS itself."
+
+      - name: Build a real disc with the tools that will ship
+        run: |
+          set -euo pipefail
+          # The test job runs the pipeline against Homebrew's tools, which target
+          # a newer macOS than this app does. This runs it against the exact
+          # binaries going into the .dmg: vendor/bin is found before anything on
+          # PATH, so these are the ones used.
+          #
+          # That turns "the tools are present and labelled correctly" into "the
+          # tools can actually author a disc", which is the claim that matters.
+          node -e "
+            const t = require('./src/core/tools').detectTools({});
+            for (const k of ['ffmpeg', 'ffprobe', 'dvdauthor', 'spumux']) console.log(k, '->', t[k]);
+          "
+          npm run test:core
+          npm run test:disc
+          # And the same again for the reuse path, so "an unchanged disc is not
+          # re-encoded" is proven with the binaries that actually ship rather than
+          # with Homebrew's newer ones.
+          npm run test:speed
+          npm run test:reuse
+
+      - name: Package version
+        id: package
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Packaging ${VERSION}"
+
+      - name: Build the app
+        env:
+          # Ad-hoc signing. There is no Developer ID here, and there does not
+          # need to be one: this build is handed to a person, not distributed.
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+        run: |
+          set -euo pipefail
+
+          # Building a DMG means mounting a temporary image, putting the app
+          # inside it, and ejecting it again. hdiutil intermittently refuses that
+          # eject -- "couldn't eject disk5 - Resource busy" -- and fails an
+          # otherwise good build. It is a known race in electron-builder, fixed
+          # there by forcing the unmount after a delay (v26), and the accepted
+          # workaround meanwhile is to let the machine settle and try again.
+          #
+          # Spotlight begins indexing a newly mounted volume the moment it
+          # appears and is a plausible thing holding it, so it is turned off
+          # first. Failure is not fatal; it may already be off.
+          sudo mdutil -i off -a >/dev/null 2>&1 || true
+
+          attempt=1
+          while true; do
+            echo ""
+            echo "--- packaging, attempt ${attempt} ---"
+            if npx electron-builder --mac --x64 --publish never; then
+              echo "packaging succeeded on attempt ${attempt}"
+              break
+            fi
+
+            if [ "${attempt}" -ge 3 ]; then
+              echo "ERROR: packaging failed ${attempt} times." >&2
+              echo "If it failed with 'Resource busy', that is the hdiutil race." >&2
+              exit 1
+            fi
+
+            attempt=$((attempt + 1))
+            echo ""
+            echo "Attempt failed. Clearing any image this app left mounted, waiting,"
+            echo "then trying again."
+            # Only images belonging to this app, identified by the volume name.
+            # Nothing else on the machine is touched.
+            hdiutil info 2>/dev/null \
+              | awk '/\/dev\/disk/ && /Burnhouse/ {print $1}' \
+              | while read -r dev; do
+                  echo "  detaching ${dev}"
+                  hdiutil detach -force "${dev}" >/dev/null 2>&1 || true
+                done
+            sleep 20
+          done
+
+      - name: Confirm the app bundle holds its tools
+        run: |
+          set -euo pipefail
+          APP="$(find dist -maxdepth 3 -name '*.app' -type d | head -1)"
+          echo "App bundle: ${APP}"
+          test -n "${APP}"
+          BIN="${APP}/Contents/Resources/bin"
+          echo "--- bundled tools in the app ---"
+          ls -la "${BIN}"
+          test -x "${BIN}/ffmpeg"
+          test -x "${BIN}/ffprobe"
+          test -x "${BIN}/dvdauthor"
+          test -x "${BIN}/spumux"
+          echo "--- running ffmpeg from inside the app bundle ---"
+          env -i PATH=/usr/bin:/bin "${BIN}/ffmpeg" -version | head -1
+
+      - name: Confirm the app is Intel, like the Mac it is for
+        run: |
+          set -euo pipefail
+          APP="$(find dist -maxdepth 3 -name '*.app' -type d | head -1)"
+          MAIN="$(find "${APP}/Contents/MacOS" -type f -perm +111 | head -1)"
+          echo "--- the app itself ---"
+          lipo -archs "${MAIN}"
+          case "$(lipo -archs "${MAIN}")" in
+            *x86_64*) ;;
+            *) echo "ERROR: the app is not x86_64 and will not run on an Intel Mac." >&2
+               exit 1 ;;
+          esac
+          echo "--- bundled tool architectures ---"
+          for tool in ffmpeg ffprobe dvdauthor spumux; do
+            echo -n "${tool}: "
+            lipo -archs "${APP}/Contents/Resources/bin/${tool}"
+          done
+
+      - name: List what was produced
+        run: ls -la dist/
+
+      - name: Upload the disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: Burnhouse-dmg
+          path: |
+            dvdburner/dist/*.dmg
+            dvdburner/dist/*.zip
+          if-no-files-found: error
+
+      - name: Publish diagnostics if anything failed
+        if: failure()
+        run: |
+          # Reading a failed step's log through the API needs a token this
+          # repository does not have, so a failure is otherwise invisible except
+          # by copying it out of the web interface by hand. This runs last and on
+          # any failure, and gathers everything needed to explain one, so that a
+          # failing build does not also mean a round trip.
+          {
+            echo "=== runner ==="
+            uname -m
+            sw_vers 2>/dev/null || true
+            echo "brew prefix: $(brew --prefix 2>/dev/null || echo unknown)"
+            echo
+            echo "=== bundle-deps output ==="
+            cat /tmp/bundle.log 2>/dev/null || echo "(nothing was captured)"
+            echo
+            echo "=== the bundled tools as built ==="
+            for tool in ffmpeg ffprobe dvdauthor spumux; do
+              echo "--- ${tool}"
+              if [ -e "vendor/bin/${tool}" ]; then
+                echo -n "architectures: "; lipo -archs "vendor/bin/${tool}" 2>&1 || true
+                echo "minimum macOS: $(otool -l "vendor/bin/${tool}" 2>/dev/null \
+                  | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' \
+                  | grep -E '^ *(minos|version) ' | head -1 | awk '{print $2}')"
+                echo "linked against:"
+                otool -L "vendor/bin/${tool}" 2>/dev/null | tail -n +2 || true
+              else
+                echo "(not present)"
+              fi
+            done
+            echo
+            echo "=== the same for what Homebrew installed ==="
+            for tool in ffmpeg ffprobe dvdauthor spumux; do
+              P="$(command -v ${tool} 2>/dev/null || true)"
+              [ -n "${P}" ] || continue
+              echo "--- ${tool} (${P})"
+              echo "minimum macOS: $(otool -l "${P}" 2>/dev/null \
+                | grep -A4 -E 'LC_BUILD_VERSION|LC_VERSION_MIN_MACOSX' \
+                | grep -E '^ *(minos|version) ' | head -1 | awk '{print $2}')"
+            done
+            echo
+            echo "=== what was produced ==="
+            find vendor -type f 2>/dev/null | head -60 || true
+            ls -la dist 2>/dev/null || echo "(no dist)"
+          } > ci-diagnostics.txt 2>&1 || true
+
+          git config user.name 'github-actions'
+          git config user.email 'github-actions@users.noreply.github.com'
+          git checkout -B ci-diagnostics
+          git add -f ci-diagnostics.txt
+          git commit -m "Build diagnostics for ${GITHUB_SHA}" || true
+          git push -f origin ci-diagnostics || true
+
+      - name: Publish a release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Burnhouse ${{ steps.package.outputs.version }}
+          body: |
+            ## Burnhouse ${{ steps.package.outputs.version }}
+
+            A stable DVD maker for macOS. Everything needed to build and burn a
+            disc is inside the app — nothing else to install.
+
+            **To install:** open the `.dmg`, drag Burnhouse to Applications, then
+            right-click Burnhouse in Applications and choose **Open** the first
+            time. macOS shows a warning because the app is not notarised; the
+            right-click is how you tell it you trust it.
+
+            **What it does:** add videos, design a menu, burn a DVD that plays in
+            a normal DVD player.
+          files: |
+            dvdburner/dist/*.dmg
+            dvdburner/dist/*.zip
+          draft: false
+          prerelease: false

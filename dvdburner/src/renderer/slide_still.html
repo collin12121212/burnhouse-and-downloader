@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Burnhouse slide renderer</title>
+<style>
+  html, body { margin: 0; padding: 0; background: #000; overflow: hidden; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+
+<!--
+  A hidden window that draws slides off-screen and hands back PNGs.
+
+  It loads the same drawing file the visible editor uses. The drawing code
+  registers itself on `window` when no CommonJS `module` object is present,
+  which is what makes one file serve both environments.
+-->
+<script src="../core/slide_draw.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  function loadImage(src) {
+    return new Promise(function (resolve) {
+      if (!src) return resolve(null);
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      // A picture that fails to decode is not worth failing the whole render
+      // for: the slide is still perfectly usable without it.
+      img.onerror = function () { resolve(null); };
+      img.src = src;
+    });
+  }
+
+  window.renderSlide = async function (payload) {
+    try {
+      var layout = payload.layout;
+      var canvas = document.getElementById('stage');
+      canvas.width = layout.width;
+      canvas.height = layout.height;
+
+      var ctx = canvas.getContext('2d', { alpha: false });
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      var draw = window.BurnhouseSlideDraw;
+      if (!draw) throw new Error('The slide drawing code did not load.');
+
+      // Decode every picture before drawing, so the draw pass itself is
+      // synchronous and deterministic.
+      var images = {};
+      var sources = payload.images || {};
+      var ids = Object.keys(sources);
+      for (var i = 0; i < ids.length; i++) {
+        images[ids[i]] = await loadImage(sources[ids[i]]);
+      }
+
+      draw.drawSlide(ctx, layout, images);
+
+      return { ok: true, dataUrl: canvas.toDataURL('image/png') };
+    } catch (err) {
+      return { ok: false, error: String((err && err.message) || err) };
+    }
+  };
+
+  window.__slideStillReady = true;
+})();
+</script>
+</body>
+</html>

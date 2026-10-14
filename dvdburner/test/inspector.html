@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pixel inspector</title>
+<style>
+  html, body { margin: 0; background: #000; }
+  canvas { display: block; }
+</style>
+</head>
+<body>
+<canvas id="stage"></canvas>
+<script>
+/*
+  A tiny image inspector used only by the test suite.
+
+  It loads a PNG from a data URL and reports colour statistics about it, which
+  is how the tests check that a rendered menu actually contains something
+  rather than being a perfectly valid blank picture.
+*/
+(function () {
+  'use strict';
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('The image could not be decoded.')); };
+      img.src = src;
+    });
+  }
+
+  window.inspect = async function (dataUrl) {
+    var img = await loadImage(dataUrl);
+    var canvas = document.getElementById('stage');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+
+    var ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(img, 0, 0);
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+    // Bucket colours coarsely so compression-free PNG noise does not make the
+    // background look like content.
+    var counts = new Map();
+    for (var i = 0; i < data.length; i += 4) {
+      var key = (data[i] >> 3) + ',' + (data[i + 1] >> 3) + ',' + (data[i + 2] >> 3);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+
+    var background = null;
+    var best = -1;
+    counts.forEach(function (count, key) {
+      if (count > best) { best = count; background = key; }
+    });
+
+    var differing = 0;
+    var rowHasInk = [];
+    for (var y = 0; y < canvas.height; y++) {
+      var inkInRow = 0;
+      for (var x = 0; x < canvas.width; x++) {
+        var index = (y * canvas.width + x) * 4;
+        var k = (data[index] >> 3) + ',' + (data[index + 1] >> 3) + ',' + (data[index + 2] >> 3);
+        if (k !== background) { differing++; inkInRow++; }
+      }
+      rowHasInk.push(inkInRow);
+    }
+
+    return {
+      width: canvas.width,
+      height: canvas.height,
+      differing: differing,
+      total: canvas.width * canvas.height,
+      rowHasInk: rowHasInk,
+    };
+  };
+
+  /* Draw a tall, high-contrast test picture so cropping is visible. */
+  window.makeCover = function () {
+    var canvas = document.createElement('canvas');
+    canvas.width = 600;
+    canvas.height = 800;
+    var ctx = canvas.getContext('2d');
+
+    var grad = ctx.createLinearGradient(0, 0, 600, 800);
+    grad.addColorStop(0, '#8c3b2e');
+    grad.addColorStop(0.5, '#d9a353');
+    grad.addColorStop(1, '#16231d');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 600, 800);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(60, 60, 480, 90);
+    ctx.fillRect(60, 650, 480, 90);
+
+    return canvas.toDataURL('image/png');
+  };
+
+  /*
+    Measure how much contrast appears in the top and bottom overscan margins.
+
+    A smooth vignette is legitimately present there and has a low spread across
+    any single row. Text or a button bleeding into the margin produces a high
+    spread, because it puts two very different luminances side by side.
+  */
+  window.rowSpread = async function (dataUrl) {
+    var img = await loadImage(dataUrl);
+    var canvas = document.getElementById('stage');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    var ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(img, 0, 0);
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+    function spreadOfRow(y) {
+      var lo = 255;
+      var hi = 0;
+      for (var x = 0; x < canvas.width; x++) {
+        var i = (y * canvas.width + x) * 4;
+        // Rec. 601 luma, the same measure a television uses.
+        var luma = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        if (luma < lo) lo = luma;
+        if (luma > hi) hi = luma;
+      }
+      return Math.round(hi - lo);
+    }
+
+    var result = [];
+    var rows = [0, 4, 8, 16, 24, 32];
+    var worstTop = 0;
+    for (var a = 0; a < rows.length; a++) {
+      var s = spreadOfRow(rows[a]);
+      if (s > worstTop) worstTop = s;
+    }
+    result.push({ where: 'top', spread: worstTop });
+
+    var worstBottom = 0;
+    for (var b = 0; b < rows.length; b++) {
+      var y = canvas.height - 1 - rows[b];
+      if (y < 0) continue;
+      var t = spreadOfRow(y);
+      if (t > worstBottom) worstBottom = t;
+    }
+    result.push({ where: 'bottom', spread: worstBottom });
+
+    return result;
+  };
+
+  /*
+    Report how much of a given rectangle differs from the picture's dominant
+    background colour. Used to prove that a cover image actually appeared in its
+    box rather than silently failing to load.
+  */
+  window.boxCoverage = async function (dataUrl, box) {
+    var img = await loadImage(dataUrl);
+    var canvas = document.getElementById('stage');
+    canvas.width = img.naturalWidth || img.width;
+    canvas.height = img.naturalHeight || img.height;
+    var ctx = canvas.getContext('2d', { alpha: false });
+    ctx.drawImage(img, 0, 0);
+    var data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+
+    // Find the dominant colour across the whole picture.
+    var counts = new Map();
+    for (var i = 0; i < data.length; i += 4) {
+      var key = (data[i] >> 3) + ',' + (data[i + 1] >> 3) + ',' + (data[i + 2] >> 3);
+      counts.set(key, (counts.get(key) || 0) + 1);
+    }
+    var background = null;
+    var best = -1;
+    counts.forEach(function (count, k) { if (count > best) { best = count; background = k; } });
+
+    function coverage(x0, y0, w, h) {
+      var differing = 0;
+      var total = 0;
+      for (var y = Math.max(0, y0); y < Math.min(canvas.height, y0 + h); y++) {
+        for (var x = Math.max(0, x0); x < Math.min(canvas.width, x0 + w); x++) {
+          var index = (y * canvas.width + x) * 4;
+          var k2 = (data[index] >> 3) + ',' + (data[index + 1] >> 3) + ',' + (data[index + 2] >> 3);
+          if (k2 !== background) differing++;
+          total++;
+        }
+      }
+      return total ? differing / total : 0;
+    }
+
+    return {
+      inside: coverage(box.x, box.y, box.width, box.height),
+      // The mirrored strip on the opposite side of the picture, for reference.
+      outside: coverage(0, box.y, box.width, box.height),
+      dominant: background,
+    };
+  };
+
+  window.__inspectorReady = true;
+})();
+</script>
+</body>
+</html>

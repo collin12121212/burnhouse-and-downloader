@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Page Video Downloader",
+  "version": "1.1.0",
+  "description": "Finds videos on the current page, lists them, and downloads them to your PC.",
+  "permissions": ["downloads", "webRequest", "webNavigation", "storage"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Page Video Downloader"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["mux.bundle.js", "hls.js", "content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["page-bridge.js"],
+      "run_at": "document_start",
+      "all_frames": true,
+      "world": "MAIN"
+    }
+  ]
+}

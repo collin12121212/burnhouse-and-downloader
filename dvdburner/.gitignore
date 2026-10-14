@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+vendor/
+
+# Test output
+test/smoke-screenshot*.png
+test/menu-samples/
+test/fixtures/
+test/screens/
+
+# macOS
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
