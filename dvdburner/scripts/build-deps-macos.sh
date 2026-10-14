@@ -60,7 +60,7 @@ ZLIB_SHA256="9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
 FREETYPE_VERSION="2.13.3"
 FREETYPE_URL="https://download.savannah.gnu.org/releases/freetype/freetype-${FREETYPE_VERSION}.tar.gz"
 FREETYPE_SHA256="5c3a8e78f7b24c20b25b54ee575d6daa40007a5f4eea2845861c3409b3021747"
-FFMPEG_VERSION="7.1.1"
+FFMPEG_VERSION="9.0.1"
 FFMPEG_URL="https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz"
 FFMPEG_FALLBACK_URL="https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n${FFMPEG_VERSION}.tar.gz"
 DVDAUTHOR_VERSION="0.7.2"
@@ -147,6 +147,7 @@ fi
 if ! PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig" \
      ./configure --prefix="${PREFIX}" \
        --cc=clang --arch=x86_64 \
+       --enable-gpl --enable-version3 \
        --enable-static --disable-shared \
        --disable-autodetect --enable-zlib \
        --disable-doc --disable-ffplay --disable-debug \
