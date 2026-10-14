@@ -229,8 +229,14 @@ async function prepare(project, { tools, workDir, onProgress, onLog, signal, Bro
   let copied = 0;
   let encodedCount = 0;
   const encoded = [];
-  // Asked once, and only used for titles that actually need decoding.
-  const hwaccel = await encode.hardwareDecoder(tools.ffmpeg);
+  /*
+    No hardware decoding. VideoToolbox was tried and measured on her 2015-era
+    MacBook Air: decoding a minute of her H.264 episode took 8.5 seconds through
+    it against 2.2 in software, and the whole encode went from 7.0 to 9.5
+    seconds. The encoder still accepts `hwaccel` for a machine where that is not
+    true, but nothing asks for it.
+  */
+  const hwaccel = null;
 
   for (let i = 0; i < videos.length; i += 1) {
     if (signal && signal.aborted) throw new encode.AbortError('Stopped.');

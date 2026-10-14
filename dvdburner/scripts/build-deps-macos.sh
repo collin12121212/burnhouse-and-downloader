@@ -119,12 +119,6 @@ echo "    installed into ${PREFIX}"
 # LGPL build with nothing to relocate: the result links only against zlib (the
 # static one above) and libraries macOS ships.
 #
-# --enable-videotoolbox turns hardware H.264 decoding back on. --disable-autodetect
-# switches it off along with everything else, and on her dual-core MacBook Air
-# decoding was a fifth of the processor time of every encode — time the MPEG-2
-# encoder waits for. It is a system framework, so it adds no dependency, and
-# Burnhouse falls back to software decoding if it is ever refused.
-#
 # --disable-autodetect is what keeps Homebrew out. Without it configure finds
 # whatever the runner image has installed and links it, which would pull a
 # macOS 14 requirement back in.
@@ -156,7 +150,6 @@ if ! PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig" \
        --enable-gpl --enable-version3 \
        --enable-static --disable-shared \
        --disable-autodetect --enable-zlib \
-       --enable-videotoolbox \
        --disable-doc --disable-ffplay --disable-debug \
        ${FFMPEG_ASM} \
        --extra-cflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" \

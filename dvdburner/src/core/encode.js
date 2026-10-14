@@ -343,8 +343,11 @@ function motionFor(probe) {
  *             variable frame rate becomes a steady one. An interlaced source is
  *             first split into its fields (`bwdif`), so that it can be scaled
  *             without smearing two instants into one.
- *   scale     one resample, straight into the anamorphic DVD raster. The
- *             display box is 854x480 for widescreen NTSC (640x480 for 4:3) and
+ *   scale     one resample, straight into the anamorphic DVD raster —
+ *             bicubic for progressive video (13% faster than lanczos on her Mac,
+ *             with no measurable loss at DVD size: SSIM 0.9793 against 0.9794),
+ *             lanczos for interlaced, which takes the slower path anyway.
+ *             The display box is 854x480 for widescreen NTSC (640x480 for 4:3) and
  *             the stored frame is 720 wide, so the width is worked out in the
  *             display box and squeezed by 720/854 in the same step. This used
  *             to scale into 854 and then scale again into 720, which cost a
@@ -401,7 +404,7 @@ function buildVideoFilter({ width, height, sourceMatrix = null, aspect = '16:9',
     chain.push(`fps=${frameRate}`);
   }
   chain.push(
-    `scale=w=${w}:h=${h}:flags=lanczos:out_range=tv`,
+    `scale=w=${w}:h=${h}:flags=${interlaced ? 'lanczos' : 'bicubic'}:out_range=tv`,
     // BT.601 sources are already in the DVD's matrix and need no conversion.
     ...(inMatrix === 'bt601' ? [] : [`colorspace=all=bt601-6-525:iall=${inMatrix}:fast=1`]),
     `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black`,
@@ -506,10 +509,7 @@ function buildEncodeArgs({ input, outputVob, plan, durationSeconds, aspect, hwac
     // to open without `-mbd rd`. What remains is the best legal combination
     // this encoder accepts:
     //
-    //   - `-mbd rd -mpv_flags +qp_rd+mv0+naq`: rate-distortion macroblock
-    //     decisions and quantiser selection, always-try-zero-motion, and
-    //     normalised adaptive quantisation. The visible effect is fewer blocks
-    //     in flat skies and walls at the same bitrate.
+    //   - Macroblock decisions: see the note at the flags themselves.
     //   - `-non_linear_quant 1 -qmin 2 -qmax 28`: MPEG-2's own non-linear
     //     quantiser table, which spends bits more cleverly in dark scenes.
     //     qmax 28 is a hard ceiling in this build — 31 refuses to open.
@@ -532,8 +532,25 @@ function buildEncodeArgs({ input, outputVob, plan, durationSeconds, aspect, hwac
     '-g', `${gop}`,
     // Two B frames is the DVD-friendly maximum and buys real quality.
     '-bf', '2',
-    '-mbd', 'rd',
-    '-mpv_flags', '+qp_rd+mv0+naq',
+    /*
+      Rate-distortion decisions only for interlaced pictures.
+
+      `-mbd rd` with `qp_rd` was the most expensive thing this encoder did, and
+      on the progressive video nearly everyone burns it did not earn its keep.
+      Measured on her MacBook Air with one of her episodes (720p, 5.1 Mbit/s,
+      two different minutes of it), against the same picture uncompressed:
+
+        rd + qp_rd (the old recipe)   11.0-13.1 s a minute   SSIM 0.976-0.988
+        simple, as below               5.5- 6.2 s a minute   SSIM 0.979-0.992
+        DVDStyler's own command        4.2- 5.0 s a minute   SSIM 0.974-0.987
+
+      At a DVD's constant bitrate, qp_rd's per-block quantiser changes fight
+      the rate control and come out worse, not better. Simple decisions with
+      two B-frames are both faster and closer to the source, and stay ahead of
+      DVDStyler on quality. Interlaced material keeps the full recipe: it was
+      measured to help there, and nothing here says otherwise.
+    */
+    ...(motion === 'interlaced' ? ['-mbd', 'rd', '-mpv_flags', '+qp_rd+mv0+naq'] : ['-mpv_flags', '+mv0']),
     '-non_linear_quant', '1',
     '-qmin', '2',
     '-qmax', '28',

@@ -1035,7 +1035,10 @@ async function main() {
       assert(!joined.includes('-bf 3'), 'More than two B frames is not DVD-legal');
       // Rate-distortion decisions and the non-linear quantiser are the pro
       // quality flags; both were verified against the shipped ffmpeg.
-      assert(joined.includes('-mbd rd'), 'Must use rate-distortion macroblock decisions');
+      // Progressive video: simple macroblock decisions measured faster and
+      // closer to the source than rd + qp_rd at a DVD's constant bitrate.
+      assert(!joined.includes('qp_rd'), 'Progressive video does not pay for qp_rd');
+      assert(joined.includes('-bf 2'), 'Two B-frames are kept');
       assert(joined.includes('-non_linear_quant 1'), 'Must use the non-linear quantiser');
       assert(joined.includes('-qmax 28'), 'qmax 28 is the ceiling this build accepts');
       assert(joined.includes('-alternate_scan 1'), 'Must use the alternate scan for interlaced material');
