@@ -110,6 +110,17 @@ function run(file, args, opts = {}) {
  * rate, and 44.1 kHz audio is not the DVD sample rate. A pipeline that only
  * works on already-conformant input is not a pipeline.
  */
+/*
+ * Test clips are written with libx264 and libmp3lame so that the pipeline is fed
+ * what people actually have: H.264 video and MP3 sound. The ffmpeg that ships in
+ * the app carries no encoders for either -- it only has to read them -- so the CI
+ * build points BURNHOUSE_FIXTURE_FFMPEG at a full ffmpeg for making fixtures while
+ * everything under test still runs on the shipped binaries.
+ */
+function fixtureEncoder(ffmpeg) {
+  return process.env.BURNHOUSE_FIXTURE_FFMPEG || ffmpeg;
+}
+
 function makeFixture(ffmpeg, { name, seconds = 3, size = '640x360', fps = 24, audio = true }) {
   fs.mkdirSync(FIXTURE_DIR, { recursive: true });
   const out = path.join(FIXTURE_DIR, name);
@@ -129,7 +140,7 @@ function makeFixture(ffmpeg, { name, seconds = 3, size = '640x360', fps = 24, au
   if (audio) args.push('-c:a', 'aac', '-shortest');
   args.push(out);
 
-  const result = run(ffmpeg, args);
+  const result = run(fixtureEncoder(ffmpeg), args);
   if (result.code !== 0 || !fs.existsSync(out)) {
     throw new Error(
       `Could not generate the test clip "${name}".\n${result.stderr || (result.error && result.error.message)}`
@@ -1067,7 +1078,7 @@ async function main() {
       // A bright, colourful source so the encoded frame is clearly not black at
       // the edges — that is how the "does it fill the screen" check below works.
       const brightFixture = path.join(dir, 'bright.mp4');
-      const madeBright = run(tools.ffmpeg, [
+      const madeBright = run(fixtureEncoder(tools.ffmpeg), [
         '-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
         '-f', 'lavfi', '-i', 'color=c=0xcccccc:s=1280x720:r=30:d=3',
         '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p',
@@ -1466,7 +1477,7 @@ async function main() {
       */
       const dir = tmpdir('mp3sound');
       const song = path.join(dir, 'tune.mp3');
-      const made = run(tools.ffmpeg, [
+      const made = run(fixtureEncoder(tools.ffmpeg), [
         '-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
         '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=44100:duration=5',
         '-c:a', 'libmp3lame', '-b:a', '128k', song,

@@ -230,6 +230,13 @@ jobs:
             const t = require('./src/core/tools').detectTools({});
             for (const k of ['ffmpeg', 'ffprobe', 'dvdauthor', 'spumux']) console.log(k, '->', t[k]);
           "
+          # The tests write their sample clips as H.264 and MP3, and the ffmpeg
+          # that ships has no encoder for either -- it only reads them. Homebrew's
+          # ffmpeg is installed purely to make those clips; it never touches the
+          # pipeline under test, which keeps running on vendor/bin.
+          brew install ffmpeg >/dev/null 2>&1 || brew install ffmpeg
+          export BURNHOUSE_FIXTURE_FFMPEG="$(brew --prefix)/bin/ffmpeg"
+          echo "sample clips are written by ${BURNHOUSE_FIXTURE_FFMPEG}"
           npm run test:core
           npm run test:disc
           # And the same again for the reuse path, so "an unchanged disc is not
