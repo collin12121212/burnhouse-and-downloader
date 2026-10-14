@@ -82,7 +82,7 @@ function makeFixture() {
       '-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
       '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=25:duration=4',
       '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=48000:duration=4',
-      '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+      '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p',
       '-c:a', 'aac', '-shortest',
       target,
     ],

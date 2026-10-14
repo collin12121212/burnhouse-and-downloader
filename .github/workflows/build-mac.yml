@@ -341,6 +341,13 @@ jobs:
             dvdburner/dist/*.zip
           if-no-files-found: error
 
+      - name: Upload the downloader extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: Downloader-extension
+          path: downloader/
+          if-no-files-found: error
+
       - name: Publish diagnostics if anything failed
         if: failure()
         run: |

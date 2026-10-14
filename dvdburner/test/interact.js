@@ -61,7 +61,7 @@ function makeFixtures() {
       ffmpeg,
       ['-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
         '-f', 'lavfi', '-i', `testsrc2=size=640x360:rate=30:duration=2`,
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', target],
+        '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p', target],
       { encoding: 'utf8', windowsHide: true }
     );
     if (result.status === 0 && fs.existsSync(target)) made.push(target);

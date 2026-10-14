@@ -21,6 +21,7 @@ const dvdModel = require('../src/core/dvd_model');
 const author = require('../src/core/author');
 const deckModel = require('../src/core/deck');
 const disc = require('../src/core/disc');
+const { detectTools } = require('../src/core/tools');
 
 let passed = 0;
 let failed = 0;
@@ -236,7 +237,7 @@ test('button rectangles are even, as the subpicture format needs', () => {
 
 section('Highlight picture');
 
-const ffmpeg = which('ffmpeg');
+const ffmpeg = detectTools().ffmpeg || which('ffmpeg');
 
 if (!ffmpeg) {
   console.log('  SKIP the highlight picture is generated — ffmpeg is not installed');

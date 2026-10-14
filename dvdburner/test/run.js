@@ -124,7 +124,7 @@ function makeFixture(ffmpeg, { name, seconds = 3, size = '640x360', fps = 24, au
     args.push('-f', 'lavfi', '-i', `sine=frequency=440:sample_rate=44100:duration=${seconds}`);
   }
   args.push(
-    '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+    '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p',
   );
   if (audio) args.push('-c:a', 'aac', '-shortest');
   args.push(out);
@@ -1070,7 +1070,7 @@ async function main() {
       const madeBright = run(tools.ffmpeg, [
         '-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
         '-f', 'lavfi', '-i', 'color=c=0xcccccc:s=1280x720:r=30:d=3',
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+        '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p',
         brightFixture,
       ]);
       assertEqual(madeBright.code, 0, 'Could make a bright 16:9 test clip');

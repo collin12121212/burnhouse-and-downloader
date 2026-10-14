@@ -51,7 +51,7 @@ function makeFixtures() {
         '-nostdin', '-hide_banner', '-y', '-loglevel', 'error',
         '-f', 'lavfi', '-i', `testsrc2=size=${spec.size}:rate=${spec.rate}:duration=${spec.seconds}`,
         '-f', 'lavfi', '-i', `sine=frequency=${spec.tone}:sample_rate=48000:duration=${spec.seconds}`,
-        '-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p',
+        '-c:v', 'mpeg4', '-q:v', '2', '-pix_fmt', 'yuv420p',
         '-c:a', 'aac', '-shortest', target,
       ],
       { encoding: 'utf8', windowsHide: true }
