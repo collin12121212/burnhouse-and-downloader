@@ -186,7 +186,7 @@ jobs:
           if [ "${FAILED}" -ne 0 ]; then
             echo "" >&2
             echo "The Homebrew bottles are too new for this Mac. Replace them with" >&2
-            echo "builds that target macOS 12 — a static ffmpeg for x86_64, and" >&2
+            echo "builds that target macOS 12 — ffmpeg compiled with -mmacosx-version-min=12.0, and" >&2
             echo "dvdauthor compiled with -mmacosx-version-min=12.0." >&2
             exit 1
           fi

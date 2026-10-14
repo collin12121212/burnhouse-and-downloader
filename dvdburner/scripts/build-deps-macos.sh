@@ -12,12 +12,11 @@
 # newest possible macOS is 12.7.6, and a binary that needs 14 does not run there
 # at all. The app would install, launch, and fail the moment a video was added.
 #
-# So the tools are either taken prebuilt with a low deployment target, or
-# compiled here with one. Nothing is installed with Homebrew.
+# So the tools are compiled here with a low deployment target. Nothing Homebrew
+# provides is linked in (nasm is used as a build tool only).
 #
-#   ffmpeg, ffprobe  static x86_64 builds for macOS 10.13, from evermeet.cx.
-#                    Static means no libraries to relocate and nothing to go
-#                    stale on somebody else's machine.
+#   ffmpeg, ffprobe  compiled from source with MACOSX_DEPLOYMENT_TARGET=12.0,
+#                    static, with no external codec libraries (see below).
 #   dvdauthor,spumux compiled from source with MACOSX_DEPLOYMENT_TARGET=12.0,
 #                    linked against libpng (also built here, also for 12) and
 #                    otherwise only against libraries macOS ships.
@@ -61,6 +60,9 @@ ZLIB_SHA256="9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23"
 FREETYPE_VERSION="2.13.3"
 FREETYPE_URL="https://download.savannah.gnu.org/releases/freetype/freetype-${FREETYPE_VERSION}.tar.gz"
 FREETYPE_SHA256="5c3a8e78f7b24c20b25b54ee575d6daa40007a5f4eea2845861c3409b3021747"
+FFMPEG_VERSION="7.1.1"
+FFMPEG_URL="https://ffmpeg.org/releases/ffmpeg-${FFMPEG_VERSION}.tar.xz"
+FFMPEG_FALLBACK_URL="https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n${FFMPEG_VERSION}.tar.gz"
 DVDAUTHOR_VERSION="0.7.2"
 # MacPorts mirrors the upstream tarball byte for byte, which is why the checksum
 # below -- the one Homebrew publishes -- matches it.
@@ -76,36 +78,6 @@ DVDAUTHOR_SHA256="3020a92de9f78eb36f48b6f22d5a001c47107826634a785a62dfcd080f612e
 echo "Building for macOS ${MACOSX_DEPLOYMENT_TARGET} on $(uname -m)"
 echo "Scratch: ${WORK}"
 echo ""
-
-# ------------------------------------------------------------------ ffmpeg ---
-# Static Intel builds, documented as requiring macOS 10.13 or newer.
-fetch_static() {
-  local name="$1"
-  local out="${OUT_DIR}/${name}"
-
-  echo "==> ${name}: downloading a static build"
-  curl -fsSL --retry 3 --retry-delay 2 -o "${WORK}/${name}.zip" \
-    "https://evermeet.cx/ffmpeg/getrelease/${name}/zip"
-
-  rm -rf "${WORK}/unzip-${name}"
-  mkdir -p "${WORK}/unzip-${name}"
-  unzip -q -o "${WORK}/${name}.zip" -d "${WORK}/unzip-${name}"
-
-  local found
-  found="$(find "${WORK}/unzip-${name}" -type f -name "${name}" | head -1)"
-  if [ -z "${found}" ]; then
-    echo "ERROR: no ${name} binary inside the downloaded archive" >&2
-    ls -la "${WORK}/unzip-${name}" >&2 || true
-    exit 1
-  fi
-
-  cp "${found}" "${out}"
-  chmod +x "${out}"
-  echo "    $(lipo -archs "${out}")  $(ls -la "${out}" | awk '{print $5}') bytes"
-}
-
-fetch_static ffmpeg
-fetch_static ffprobe
 
 # ------------------------------------------------------------------- zlib ---
 # libpng's pkg-config file lists zlib, and macOS ships the library but no
@@ -135,6 +107,74 @@ cd zlib
 make -j"$(sysctl -n hw.ncpu)" >/dev/null 2>&1
 make install >/dev/null 2>&1
 echo "    installed into ${PREFIX}"
+
+# ------------------------------------------------------------------ ffmpeg ---
+# Compiled here rather than downloaded. This used to fetch evermeet.cx's static
+# builds, until that endpoint started answering HTTP 410 Gone and took the whole
+# macOS build down with it. A prebuilt binary from a third-party host is a
+# dependency this project cannot repair; a source tarball is not.
+#
+# Only ffmpeg's own codecs are needed -- mpeg2video, ac3, the dvd muxer and the
+# lavfi sources -- so no external codec library is enabled. That keeps this an
+# LGPL build with nothing to relocate: the result links only against zlib (the
+# static one above) and libraries macOS ships.
+#
+# --disable-autodetect is what keeps Homebrew out. Without it configure finds
+# whatever the runner image has installed and links it, which would pull a
+# macOS 14 requirement back in.
+echo ""
+echo "==> ffmpeg ${FFMPEG_VERSION}: building (static, macOS ${MACOSX_DEPLOYMENT_TARGET})"
+cd "${WORK}/src"
+curl -fsSL --retry 3 --retry-delay 2 -o ffmpeg.tar.xz "${FFMPEG_URL}" || \
+  curl -fsSL --retry 3 --retry-delay 2 -o ffmpeg.tar.xz "${FFMPEG_FALLBACK_URL}"
+# Not pinned to a checksum yet. Printed so one can be added from a good build.
+echo "    sha256 $(shasum -a 256 ffmpeg.tar.xz | awk '{print $1}')"
+
+mkdir -p ffmpeg && tar xf ffmpeg.tar.xz -C ffmpeg --strip-components=1
+cd ffmpeg
+
+# The x86 assembly needs nasm. It is a build tool only and never ends up linked
+# into anything; without it ffmpeg still works but encodes several times slower.
+FFMPEG_ASM=""
+if ! command -v nasm >/dev/null 2>&1; then
+  brew install nasm >/dev/null 2>&1 || true
+fi
+if ! command -v nasm >/dev/null 2>&1; then
+  echo "    WARNING: nasm is not available; building without x86 assembly (slow)"
+  FFMPEG_ASM="--disable-x86asm"
+fi
+
+if ! PKG_CONFIG_LIBDIR="${PREFIX}/lib/pkgconfig" \
+     ./configure --prefix="${PREFIX}" \
+       --cc=clang --arch=x86_64 \
+       --enable-static --disable-shared \
+       --disable-autodetect --enable-zlib \
+       --disable-doc --disable-ffplay --disable-debug \
+       ${FFMPEG_ASM} \
+       --extra-cflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -I${PREFIX}/include" \
+       --extra-ldflags="-mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} -L${PREFIX}/lib" \
+       >"${WORK}/ffmpeg-configure.log" 2>&1; then
+  echo "ERROR: ffmpeg's configure failed. The end of its log:" >&2
+  tail -40 "${WORK}/ffmpeg-configure.log" >&2
+  tail -60 ffbuild/config.log >&2 || true
+  exit 1
+fi
+if ! make -j"$(sysctl -n hw.ncpu)" >"${WORK}/ffmpeg-make.log" 2>&1; then
+  echo "ERROR: ffmpeg failed to compile. The end of its log:" >&2
+  tail -60 "${WORK}/ffmpeg-make.log" >&2
+  exit 1
+fi
+make install >/dev/null 2>&1
+for tool in ffmpeg ffprobe; do
+  if [ ! -x "${PREFIX}/bin/${tool}" ]; then
+    echo "ERROR: ${tool} was not produced by the build" >&2
+    ls -la "${PREFIX}/bin" >&2 || true
+    exit 1
+  fi
+  cp "${PREFIX}/bin/${tool}" "${OUT_DIR}/${tool}"
+  chmod +x "${OUT_DIR}/${tool}"
+  echo "    ${tool}: $(lipo -archs "${OUT_DIR}/${tool}")"
+done
 
 # ------------------------------------------------------------------ libpng ---
 # Needed by spumux to read the button highlight images, which are PNGs.
