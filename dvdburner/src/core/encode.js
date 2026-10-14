@@ -349,9 +349,21 @@ function motionFor(probe) {
  *             display box and squeezed by 720/854 in the same step. This used
  *             to scale into 854 and then scale again into 720, which cost a
  *             second resample of every frame and softened the picture twice.
- *             The colour matrix is converted here too (BT.709 HD to BT.601 SD)
- *             — without it reds go orange on any television that trusts the
- *             DVD flags. The input range is left to the source: forcing "tv"
+ *   colour    BT.709 HD to the BT.601 a DVD uses — without it reds go orange on
+ *             any television that trusts the DVD flags. Done by the
+ *             `colorspace` filter on the small frame, after the resize, not by
+ *             the scaler during it. Measured on her MacBook Air with one of her
+ *             episodes, the scaler's conversion cost 1.9 seconds per minute of
+ *             video against 0.1 for the filter, and it was also slightly wrong:
+ *             a known mid-grey came back as 125 instead of 128, and pure blue
+ *             as 250 instead of 254. The filter returns 128 and 254.
+ *
+ *             Deliberately not a new ENCODE_REVISION: titles already prepared
+ *             the old way are still good, and re-encoding an evening of
+ *             episodes for a three-level brightness difference is the wrong
+ *             trade. Anything encoded from now on gets the new chain.
+ *
+ *   range     The input range is left to the source: forcing "tv"
  *             washed out the phones and screen recorders that shoot full-range.
  *   pad       letterbox or pillarbox to exactly 720x480.
  *   fields    interlaced: `interlace` weaves pairs of frames into fields.
@@ -389,7 +401,9 @@ function buildVideoFilter({ width, height, sourceMatrix = null, aspect = '16:9',
     chain.push(`fps=${frameRate}`);
   }
   chain.push(
-    `scale=w=${w}:h=${h}:flags=lanczos:in_color_matrix=${inMatrix}:out_color_matrix=bt601:out_range=tv`,
+    `scale=w=${w}:h=${h}:flags=lanczos:out_range=tv`,
+    // BT.601 sources are already in the DVD's matrix and need no conversion.
+    ...(inMatrix === 'bt601' ? [] : [`colorspace=all=bt601-6-525:iall=${inMatrix}:fast=1`]),
     `pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=black`,
     `setsar=${sar}`,
     interlaced ? `interlace=scan=${order}` : `setfield=${order}`

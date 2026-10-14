@@ -1020,7 +1020,8 @@ async function main() {
       const args = encode.buildEncodeArgs({
         input: '/tmp/in.mp4',
         outputVob: '/tmp/VTS_01_1.VOB',
-        plan: { ...plan, hasAudio: true },
+        // An HD source, so the BT.709 to BT.601 conversion is part of the recipe.
+        plan: { ...plan, hasAudio: true, probe: { width: 1920, height: 1080, fps: 29.97 } },
         durationSeconds: 3600,
         aspect: { ratio: '16:9' },
       });
@@ -1045,7 +1046,7 @@ async function main() {
       assert(!/crop=/.test(joined), 'Must not crop the picture');
       assert(joined.includes('setsar=32/27'), 'Must set anamorphic widescreen SAR (32:27)');
       assert(joined.includes('out_range=tv'), 'Must produce broadcast-legal levels');
-      assert(joined.includes('out_color_matrix=bt601'), 'Must convert HD colour to the DVD matrix');
+      assert(joined.includes('colorspace=all=bt601-6-525:iall=bt709'), 'Must convert HD colour to the DVD matrix');
       // The peak rate must fit inside the mux rate, or cheap players choke.
       const maxrate = Number(/-maxrate (\d+)/.exec(joined)[1]);
       const muxrate = Number(/-muxrate (\d+)/.exec(joined)[1]);

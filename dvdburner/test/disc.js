@@ -235,6 +235,28 @@ test('button rectangles are even, as the subpicture format needs', () => {
 
 // ------------------------------------------------- highlight image on disk ---
 
+test('a button hanging off the slide is cut to the frame, as spumux requires', () => {
+  const slideLayout = require('../src/core/slide_layout');
+  // The rectangle from her disc: a clickable photo reaching 14 pixels below
+  // the frame. spumux refused the whole menu over it.
+  const out = slideLayout.buttonsForAuthoring({
+    buttons: [
+      { id: 'photo', box: { x: 252, y: 362, width: 180, height: 132 } },
+      { id: 'gone', box: { x: 100, y: 500, width: 60, height: 40 } },
+      { id: 'left', box: { x: -40, y: 10, width: 100, height: 50 } },
+    ],
+  });
+  assertEqual(out.length, 2, 'A button with nothing on screen is left out');
+  const photo = out.find((b) => b.id === 'photo');
+  assertEqual([photo.x0, photo.y0, photo.x1, photo.y1].join(','), '252,362,432,480');
+  const left = out.find((b) => b.id === 'left');
+  assertEqual(left.x0, 0, 'Cut at the left edge too');
+  assertEqual(out.map((b) => b.name).join(','), 'btn1,btn2', 'Names stay in order with no gap');
+  for (const b of out) {
+    assert(b.x0 >= 0 && b.y0 >= 0 && b.x1 <= 720 && b.y1 <= 480, `${b.id} is inside the frame`);
+  }
+});
+
 section('Highlight picture');
 
 const ffmpeg = detectTools().ffmpeg || which('ffmpeg');

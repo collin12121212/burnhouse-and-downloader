@@ -436,6 +436,9 @@ async function prepare(project, { tools, workDir, onProgress, onLog, signal, Bro
   // dvdauthor refuses to write into a folder holding another VIDEO_TS, so clear
   // the destination's disc structure (and only that) before each run.
   removeDiscStructure(authorDir);
+  await requireFreeSpace(authorDir,
+    good.reduce((sum, v) => sum + (v.parts || []).reduce((t, p) => t + (p.bytes || 0), 0), 0),
+    'build the disc');
 
   const authored = await author.runDvdauthor({
     dvdauthorPath: tools.dvdauthor,
@@ -901,6 +904,19 @@ function runSpumuxToFile({ spumuxPath, xml, inputVob, outputPath, workDir, signa
       reject(new Error(`Could not read the menu video: ${err.message}`));
     });
     input.pipe(child.stdin);
+    /*
+      spumux can stop reading before the menu video has all gone in — it quits
+      the moment it finds something wrong with the buttons. The next write then
+      fails with EPIPE, and with nothing listening for that, Node treats it as an
+      uncaught exception: the main process threw "A JavaScript error occurred in
+      the main process: write EPIPE" in a dialog, and the reason spumux gave was
+      never shown. The pipe failing is only a symptom; spumux's own exit code and
+      message, reported below, are the error.
+    */
+    child.stdin.on('error', () => {
+      input.unpipe(child.stdin);
+      input.destroy();
+    });
 
     const logs = [];
     child.stdout.pipe(out);
@@ -932,7 +948,9 @@ function runSpumuxToFile({ spumuxPath, xml, inputVob, outputPath, workDir, signa
         if (signal && signal.aborted) return reject(new encode.AbortError('Stopped.'));
         const log = Buffer.concat(logs).toString();
         if (code !== 0) {
-          const line = log.split('\n').map((l) => l.trim()).filter(Boolean).pop();
+          // spumux marks its own complaints "ERR:"; that is the line worth showing.
+          const lines = log.split('\n').map((l) => l.trim()).filter(Boolean);
+          const line = (lines.filter((l) => /^ERR:/.test(l)).pop() || lines.pop() || '').replace(/^ERR:\s*/, '');
           return reject(new Error(`Building the menu failed. ${line || 'No reason given.'}`));
         }
         if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size === 0) {
@@ -1042,6 +1060,16 @@ async function burn(prepared, { tools, device, onProgress, signal, verify = true
     if (log) log('The disc image from the last burn is still current, so it is being used again.');
   } else {
     fs.rmSync(stampPath, { force: true });
+    /*
+      The old image goes before the new one is written, not after.
+
+      The new one is written beside it and renamed into place, so keeping the
+      old one until then needed room for two whole discs at once. On a laptop
+      with a few gigabytes free that is the difference between a burn and "no
+      space left on device". It is rebuilt from VIDEO_TS in about a minute.
+    */
+    fs.rmSync(isoPath, { force: true });
+    await requireFreeSpace(path.dirname(isoPath), folderBytes(prepared.videoTsDir), 'build the disc image');
     if (log) log('Building the disc image…');
     const built = await makeImage(prepared, {
       tools,
@@ -1075,6 +1103,33 @@ async function burn(prepared, { tools, device, onProgress, signal, verify = true
   });
 
   return { ...result, isoPath };
+}
+
+/**
+ * Stop before a step that would run out of room, and say how much is needed.
+ *
+ * A disc of an hour or two is four gigabytes or more in each of three forms —
+ * the prepared videos, the authored disc, and its image — and a laptop drive
+ * that is nearly full otherwise fails partway through a step that has already
+ * taken minutes, with only "No space left on device" to go on.
+ */
+async function requireFreeSpace(dir, bytesNeeded, what) {
+  const free = await disc.freeSpace(dir);
+  if (free === null || !bytesNeeded) return;
+  const margin = 200 * 1024 * 1024;
+  if (free >= bytesNeeded + margin) return;
+  const gb = (n) => `${(n / 1e9).toFixed(1)} GB`;
+  throw new Error(
+    `There is not enough free space on this computer to ${what}: it needs about ${gb(bytesNeeded + margin)} ` +
+      `and ${gb(free)} is free. Free up some space — Setup's "Clear Working Files" removes the prepared ` +
+      `files of other projects too — then try again.`
+  );
+}
+
+function folderBytes(dir) {
+  let total = 0;
+  for (const name of safeReaddir(dir)) total += safeSize(path.join(dir, name));
+  return total;
 }
 
 /** Copy the finished VIDEO_TS folder somewhere the user chose. */

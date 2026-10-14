@@ -382,23 +382,44 @@ function layoutSlide(deck, slide) {
  * value shifts the highlight half a pixel out of alignment.
  */
 function buttonsForAuthoring(layout) {
-  return layout.buttons.map((element, index) => ({
-    id: element.id,
-    index,
-    // dvdauthor matches spumux rectangles to commands by button name, in order,
-    // within a single menu page, so a simple positional name is correct and
-    // unambiguous.
-    name: `btn${index + 1}`,
-    // Buttons resolve their label to `labelText`; video tiles keep theirs in
-    // `label`. Both end up as the same thing here.
-    label: element.labelText || element.label || '',
-    videoId: element.videoId || null,
-    targetSlideId: element.targetSlideId || null,
-    x0: even(element.box.x),
-    y0: even(element.box.y),
-    x1: even(element.box.x + element.box.width),
-    y1: even(element.box.y + element.box.height),
-  }));
+  /*
+    Clipped to the frame.
+
+    A picture may hang off the edge of a slide, and a picture can be a button —
+    but a DVD button cannot reach outside the picture it sits on. spumux refuses
+    the whole menu with "Button coordinates out of range (720,480)", which is how
+    a disc with one photo poking off the bottom of a page failed to build. The
+    part of the button that is on screen is the part that can be seen and
+    selected anyway, so that is what goes on the disc; a button with nothing on
+    screen is not a button at all, and is left out.
+  */
+  const clip = (value, max) => Math.min(max, even(value));
+  return layout.buttons
+    .map((element) => ({
+      element,
+      x0: clip(element.box.x, RASTER.width),
+      y0: clip(element.box.y, RASTER.height),
+      x1: clip(element.box.x + element.box.width, RASTER.width),
+      y1: clip(element.box.y + element.box.height, RASTER.height),
+    }))
+    .filter((rect) => rect.x1 - rect.x0 >= 2 && rect.y1 - rect.y0 >= 2)
+    .map(({ element, x0, y0, x1, y1 }, index) => ({
+      id: element.id,
+      index,
+      // dvdauthor matches spumux rectangles to commands by button name, in order,
+      // within a single menu page, so a simple positional name is correct and
+      // unambiguous.
+      name: `btn${index + 1}`,
+      // Buttons resolve their label to `labelText`; video tiles keep theirs in
+      // `label`. Both end up as the same thing here.
+      label: element.labelText || element.label || '',
+      videoId: element.videoId || null,
+      targetSlideId: element.targetSlideId || null,
+      x0,
+      y0,
+      x1,
+      y1,
+    }));
 }
 
 function even(n) {

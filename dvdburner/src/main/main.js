@@ -1112,6 +1112,25 @@ async function extractPoster(ffmpegPath, videoPath, atSeconds) {
 // Lifecycle
 // ---------------------------------------------------------------------------
 
+/*
+  The last line of defence against a dialog nobody can act on.
+
+  An exception that escapes to the top of the main process makes Electron show
+  "A JavaScript error occurred in the main process" — a raw stack in a modal
+  box, with the job behind it left half done. The known cause (a pipe to a tool
+  that had already quit) is handled where it happens; anything else that slips
+  through is written to the activity log, where the reason can be read, instead
+  of interrupting her with a stack trace.
+*/
+process.on('uncaughtException', (err) => {
+  console.error('[uncaught]', String((err && err.stack) || err));
+  try {
+    jobs.log(`Unexpected error: ${String((err && err.message) || err)}`);
+  } catch {
+    /* the log itself is unavailable; the console line above stands */
+  }
+});
+
 // Only one copy of Burnhouse may run: two instances writing into the same
 // working folder would fight over the same VIDEO_TS and corrupt each other.
 const gotLock = app.requestSingleInstanceLock();
